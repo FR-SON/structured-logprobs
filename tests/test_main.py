@@ -115,3 +115,11 @@ def test_add_logprobs_inline(simple_parsed_completion, json_output_inline):
         event = completion.choices[0].message.parsed
         assert event.name == "Science Fair"
     assert completion.choices[0].message.content == json_output_inline
+
+
+def test_add_logprobs_with_new_parsed_response(new_parsed_response, json_output_new_response):
+    response = add_logprobs(new_parsed_response)
+    original_parsed = response.value.output[0].content[0].parsed
+
+    assert original_parsed.name == "Science Fair"
+    assert response.log_probs[0] == json_output_new_response
