@@ -32,7 +32,7 @@ class ResponseWithLogProbs(BaseModel):
     log_probs: list[Any]
 
 
-def map_characters_to_token_indices(extracted_data_token: Sequence[Logprob | ChatCompletionTokenLogprob]) -> list[int]:
+def map_characters_to_token_indices(extracted_data_token: Sequence[ChatCompletionTokenLogprob | Logprob]) -> list[int]:
     """
     Maps each character in the JSON string output to its corresponding token index.
 
