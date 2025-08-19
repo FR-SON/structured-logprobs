@@ -99,3 +99,25 @@ Below is the example of the JSON file that defines the schema used for validatin
     }
 }
 ```
+
+### Response API
+Additionally, the ParsedResponse object of the Response API is also supported. It is best used with Pydantic models instead of json schemas, but works the same way.
+
+```python
+class Answers(BaseModel):
+    capital_of_France: str
+    the_two_nicest_colors: list[Literal["red", "blue", "green", "yellow", "purple"]]
+    die_shows: float
+
+client = openai.OpenAI(api_key="your-api-key")
+
+response = client.responses.parse(
+    model="gpt-4o-2024-08-06",
+    instructions="Answer the user's three questions.",
+    input="What is the capital of France? Which are the two nicest colors? Roll a die and tell me the number.",
+    text_format=Answers,
+    # This is required to get logprobs
+    include=["message.output_text.logprobs"],
+)
+enhanced_response = add_logprobs(response)
+```

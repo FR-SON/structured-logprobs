@@ -8,6 +8,7 @@ from openai import OpenAI
 from openai.types import ResponseFormatJSONSchema
 from openai.types.chat.chat_completion import ChatCompletion
 from openai.types.chat.parsed_chat_completion import ParsedChatCompletion
+from openai.types.responses import ParsedResponse
 from pydantic import BaseModel
 
 
@@ -80,8 +81,25 @@ def simple_parsed_completion(pytestconfig) -> ParsedChatCompletion[CalendarEvent
 
 
 @pytest.fixture
+def new_parsed_response(pytestconfig) -> ParsedResponse[CalendarEvent]:
+    """
+    Loads a static ParsedResponse object from a JSON file for fast, key-free testing.
+    """
+    base_path = Path(pytestconfig.rootdir)
+    with open(base_path / "tests" / "resources" / "new_parsed_response.json") as f:
+        data = json.load(f)
+    format_data = data.get("text", {}).get("format")
+    if format_data and "schema_" in format_data:
+        format_data["schema"] = format_data.pop("schema_")
+    return ParsedResponse[CalendarEvent].model_validate(data)
+
+@pytest.fixture
 def json_output() -> dict[str, Any]:
     return {"name": -0.0001889152953, "date": -0.09505325175929999, "participants": [0.0, -2.0560767000000003e-06]}
+
+@pytest.fixture
+def json_output_new_response() -> dict[str, Any]:
+    return {"name": -0.00046499999999999997, "date": -0.004727, "participants": [-2e-6, -0.000087]}
 
 
 @pytest.fixture

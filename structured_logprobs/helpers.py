@@ -1,8 +1,10 @@
+from collections.abc import Sequence
 from typing import Any, TypeAlias
 
 from lark import Lark, Token, Transformer_NonRecursive, Tree, v_args
 from lark.tree import Meta
 from openai.types.chat.chat_completion_token_logprob import ChatCompletionTokenLogprob
+from openai.types.responses.response_output_text import Logprob
 from pydantic import BaseModel
 
 PyTree: TypeAlias = Any  # a tree-like structure built out of container-like Python objects.
@@ -47,7 +49,7 @@ json_grammar = r"""
 # Transformer that processes the tree and substitutes each atomic value with the cumulative log-probability of its tokens
 @v_args(meta=True)
 class Extractor(Transformer_NonRecursive):
-    def __init__(self, tokens: list[ChatCompletionTokenLogprob], token_indices: list[int]):
+    def __init__(self, tokens: Sequence[ChatCompletionTokenLogprob | Logprob], token_indices: list[int]):
         super().__init__()
         self.tokens = tokens
         self.token_indices = token_indices
@@ -55,8 +57,8 @@ class Extractor(Transformer_NonRecursive):
     def _compute_logprob_sum(self, start: int, end: int) -> float:
         token_start = self.token_indices[start]
         token_end = self.token_indices[end]
-        sum_logporb = sum(self.tokens[i].logprob for i in range(token_start, token_end))
-        return sum_logporb
+        sum_logprob = sum(self.tokens[i].logprob for i in range(token_start, token_end))
+        return sum_logprob
 
     def number(self, meta: Meta, children: list[Token]) -> float:
         logprob_sum = self._compute_logprob_sum(meta.start_pos, meta.end_pos)
@@ -101,7 +103,9 @@ class Extractor(Transformer_NonRecursive):
         return children[0]
 
 
-def extract_json_data(json_string: str, tokens: list[ChatCompletionTokenLogprob], token_indices: list[int]) -> PyTree:
+def extract_json_data(
+    json_string: str, tokens: Sequence[ChatCompletionTokenLogprob | Logprob], token_indices: list[int]
+) -> PyTree:
     json_parser = Lark(json_grammar, parser="lalr", propagate_positions=True, maybe_placeholders=False)
     tree = json_parser.parse(json_string)
     extractor = Extractor(tokens, token_indices)
@@ -111,7 +115,7 @@ def extract_json_data(json_string: str, tokens: list[ChatCompletionTokenLogprob]
 # Transformer that embeds log-probabilities for atomic values as in-line fields in dictionaries
 @v_args(meta=True)
 class ExtractorInline(Transformer_NonRecursive):
-    def __init__(self, tokens: list[ChatCompletionTokenLogprob], token_indices: list[int]):
+    def __init__(self, tokens: Sequence[ChatCompletionTokenLogprob | Logprob], token_indices: list[int]):
         super().__init__()
         self.tokens = tokens
         self.token_indices = token_indices
@@ -169,7 +173,7 @@ class ExtractorInline(Transformer_NonRecursive):
 
 
 def extract_json_data_inline(
-    json_string: str, tokens: list[ChatCompletionTokenLogprob], token_indices: list[int]
+    json_string: str, tokens: Sequence[ChatCompletionTokenLogprob | Logprob], token_indices: list[int]
 ) -> PyTree:
     json_parser = Lark(json_grammar, parser="lalr", propagate_positions=True, maybe_placeholders=False)
     tree = json_parser.parse(json_string)
